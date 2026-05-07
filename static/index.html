@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>КалоРій — Аналіз харчування</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F5F0E8;
+    --warm-white: #FDFAF4;
+    --ink: #1A1208;
+    --brown: #6B4226;
+    --orange: #E8712A;
+    --orange-light: #F5A66D;
+    --green: #3D6B3F;
+    --green-light: #A8C5AA;
+    --yellow: #F2C94C;
+    --card-bg: #FFFEF9;
+    --border: #E2D9C8;
+    --shadow: rgba(26,18,8,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      radial-gradient(circle at 20% 20%, rgba(232,113,42,0.06) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(61,107,63,0.06) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236B4226' fill-opacity='0.02'%3E%3Ccircle cx='7' cy='7' r='1'/%3E%3Ccircle cx='27' cy='7' r='1'/%3E%3Ccircle cx='47' cy='7' r='1'/%3E%3Ccircle cx='7' cy='27' r='1'/%3E%3Ccircle cx='27' cy='27' r='1'/%3E%3Ccircle cx='47' cy='27' r='1'/%3E%3Ccircle cx='7' cy='47' r='1'/%3E%3Ccircle cx='27' cy='47' r='1'/%3E%3Ccircle cx='47' cy='47' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 56px 0 40px;
+  }
+
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--orange);
+    color: white;
+    padding: 6px 18px 6px 10px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .logo-badge span.dot {
+    width: 8px; height: 8px;
+    background: var(--yellow);
+    border-radius: 50%;
+    display: block;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.4rem, 6vw, 3.6rem);
+    line-height: 1.1;
+    color: var(--ink);
+    animation: fadeDown 0.6s 0.1s ease both;
+    opacity: 0;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--orange);
+  }
+
+  .subtitle {
+    margin-top: 16px;
+    color: var(--brown);
+    font-size: 1.05rem;
+    font-weight: 300;
+    animation: fadeDown 0.6s 0.2s ease both;
+    opacity: 0;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    background: var(--border);
+    border-radius: 16px;
+    padding: 4px;
+    margin-bottom: 28px;
+    animation: fadeUp 0.6s 0.3s ease both;
+    opacity: 0;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    background: transparent;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--brown);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .tab-btn.active {
+    background: var(--card-bg);
+    color: var(--ink);
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+
+  .tab-icon { font-size: 1.1rem; }
+
+  /* Card */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 32px;
+    box-shadow: 0 4px 24px var(--shadow);
+    animation: fadeUp 0.6s 0.4s ease both;
+    opacity: 0;
+  }
+
+  /* Text input panel */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .input-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brown);
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 16px 18px;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    color: var(--ink);
+    background: var(--warm-white);
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    line-height: 1.6;
+  }
+
+  textarea:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(232,113,42,0.12);
+  }
+
+  textarea::placeholder { color: #B5A898; }
+
+  /* Image drop zone */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 14px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--warm-white);
+    position: relative;
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--orange);
+    background: rgba(232,113,42,0.04);
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .drop-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .drop-text {
+    font-size: 1rem;
+    color: var(--brown);
+    margin-bottom: 6px;
+  }
+
+  .drop-hint {
+    font-size: 0.82rem;
+    color: #B5A898;
+  }
+
+  .preview-img {
+    max-width: 100%;
+    max-height: 280px;
+    border-radius: 10px;
+    object-fit: contain;
+    display: none;
+    margin: 0 auto;
+  }
+
+  /* Submit button */
+  .btn-analyze {
+    width: 100%;
+    margin-top: 20px;
+    padding: 16px 32px;
+    background: var(--orange);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    letter-spacing: 0.01em;
+  }
+
+  .btn-analyze:hover:not(:disabled) {
+    background: #D4601E;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(232,113,42,0.35);
+  }
+
+  .btn-analyze:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn-analyze.loading .btn-text { display: none; }
+  .btn-analyze .spinner { display: none; }
+  .btn-analyze.loading .spinner { display: block; }
+
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2.5px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  /* Results */
+  .results {
+    margin-top: 28px;
+    animation: fadeUp 0.5s ease both;
+    opacity: 0;
+  }
+
+  .results.visible { opacity: 1; }
+
+  .dish-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.7rem;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  .dish-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .portion-tag {
+    font-size: 0.85rem;
+    color: var(--brown);
+    background: rgba(107,66,38,0.08);
+    padding: 4px 12px;
+    border-radius: 100px;
+  }
+
+  .confidence-tag {
+    font-size: 0.82rem;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-weight: 600;
+  }
+  .conf-high { background: rgba(61,107,63,0.12); color: var(--green); }
+  .conf-medium { background: rgba(242,201,76,0.2); color: #9B7A00; }
+  .conf-low { background: rgba(232,113,42,0.12); color: var(--orange); }
+
+  /* Calories big display */
+  .calories-hero {
+    background: linear-gradient(135deg, var(--ink) 0%, #3D2A14 100%);
+    border-radius: 18px;
+    padding: 28px 32px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .calories-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 4px;
+  }
+
+  .calories-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 3rem;
+    color: white;
+    line-height: 1;
+  }
+
+  .calories-unit {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 300;
+    color: rgba(255,255,255,0.5);
+    margin-left: 4px;
+  }
+
+  .calories-icon {
+    font-size: 3rem;
+    opacity: 0.6;
+  }
+
+  /* Macros grid */
+  .macros-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .macro-card {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 16px;
+    text-align: center;
+  }
+
+  .macro-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #B5A898;
+    margin-bottom: 6px;
+  }
+
+  .macro-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .macro-unit {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    color: #B5A898;
+  }
+
+  .macro-protein .macro-value { color: var(--green); }
+  .macro-fat .macro-value { color: var(--orange); }
+  .macro-carbs .macro-value { color: #9B7A00; }
+
+  /* Bar chart */
+  .macro-bars {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .bar-row:last-child { margin-bottom: 0; }
+
+  .bar-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--brown);
+    width: 70px;
+    flex-shrink: 0;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 8px;
+    background: var(--border);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 100px;
+    width: 0;
+    transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .bar-fill.protein { background: var(--green); }
+  .bar-fill.fat { background: var(--orange); }
+  .bar-fill.carbs { background: var(--yellow); }
+  .bar-fill.fiber { background: var(--green-light); }
+
+  .bar-val {
+    font-size: 0.82rem;
+    color: var(--brown);
+    width: 44px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* Ingredients */
+  .ingredients-section { margin-bottom: 16px; }
+
+  .section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--brown);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .ingredient-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ingredient-row:last-child { border-bottom: none; }
+
+  .ingredient-name { font-size: 0.95rem; color: var(--ink); }
+
+  .ingredient-stats {
+    display: flex;
+    gap: 12px;
+    font-size: 0.82rem;
+    color: #B5A898;
+  }
+
+  .ingredient-stats span { white-space: nowrap; }
+
+  /* Notes */
+  .notes-box {
+    background: rgba(61,107,63,0.06);
+    border: 1px solid var(--green-light);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 0.9rem;
+    color: var(--green);
+    line-height: 1.5;
+  }
+
+  /* Error */
+  .error-box {
+    background: rgba(220,50,50,0.06);
+    border: 1px solid rgba(220,50,50,0.2);
+    border-radius: 12px;
+    padding: 16px 18px;
+    color: #C03030;
+    font-size: 0.95rem;
+    margin-top: 20px;
+    display: none;
+  }
+
+  /* Animations */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 0.82rem;
+    color: #C4B8A8;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo-badge"><span class="dot"></span> AI Нутриціолог</div>
+    <h1>Аналіз <em>калорій</em><br>та КБЖУ</h1>
+    <p class="subtitle">Опишіть страву або завантажте фото — отримайте точний аналіз</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('text')">
+      <span class="tab-icon">✍️</span> Текстовий опис
+    </button>
+    <button class="tab-btn" onclick="switchTab('image')">
+      <span class="tab-icon">📷</span> Фото страви
+    </button>
+  </div>
+
+  <div class="card">
+    <!-- Text panel -->
+    <div class="panel active" id="panel-text">
+      <label class="input-label">Опис страви</label>
+      <textarea id="food-text" placeholder="Наприклад: тарілка гречки 200г з курячою грудкою 150г та свіжим огірком, заправлена оливковою олією..." rows="4"></textarea>
+    </div>
+
+    <!-- Image panel -->
+    <div class="panel" id="panel-image">
+      <label class="input-label">Фото їжі</label>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="food-image" accept="image/*" onchange="handleFileSelect(event)">
+        <img class="preview-img" id="preview-img" alt="Preview">
+        <div id="drop-content">
+          <span class="drop-icon">🍽️</span>
+          <p class="drop-text">Перетягніть фото або <u>натисніть для вибору</u></p>
+          <p class="drop-hint">JPG, PNG, WEBP до 10 МБ</p>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-analyze" id="analyze-btn" onclick="analyze()">
+      <span class="btn-text">🔍 Проаналізувати</span>
+      <div class="spinner"></div>
+    </button>
+
+    <div class="error-box" id="error-box"></div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results"></div>
+
+  <footer>Значення калорійності є приблизними. Точність залежить від складу та розміру порції.</footer>
+</div>
+
+<script>
+  let activeTab = 'text';
+  let selectedFile = null;
+
+  function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', (i === 0 && tab === 'text') || (i === 1 && tab === 'image'));
+    });
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`panel-${tab}`).classList.add('active');
+    hideError();
+    document.getElementById('results').innerHTML = '';
+    document.getElementById('results').classList.remove('visible');
+  }
+
+  function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = document.getElementById('preview-img');
+      img.src = ev.target.result;
+      img.style.display = 'block';
+      document.getElementById('drop-content').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Drag and drop
+  const dropZone = document.getElementById('drop-zone');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        document.getElementById('preview-img').src = ev.target.result;
+        document.getElementById('preview-img').style.display = 'block';
+        document.getElementById('drop-content').style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  function showError(msg) {
+    const box = document.getElementById('error-box');
+    box.textContent = '⚠️ ' + msg;
+    box.style.display = 'block';
+  }
+
+  function hideError() {
+    document.getElementById('error-box').style.display = 'none';
+  }
+
+  async function analyze() {
+    hideError();
+    const btn = document.getElementById('analyze-btn');
+
+    if (activeTab === 'text') {
+      const text = document.getElementById('food-text').value.trim();
+      if (!text) { showError('Будь ласка, введіть опис страви'); return; }
+      btn.classList.add('loading');
+      btn.disabled = true;
+      try {
+        const form = new FormData();
+        form.append('description', text);
+        const resp = await fetch('/analyze/text', { method: 'POST', body: form });
+        if (!resp.ok) throw new Error(`Помилка сервера: ${resp.status}`);
+        const data = await resp.json();
+        renderResults(data);
+      } catch (e) {
+        showError(e.message || 'Не вдалося проаналізувати. Перевірте підключення.');
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    } else {
+      if (!selectedFile) { showError('Будь ласка, оберіть фото страви'); return; }
+      btn.classList.add('loading');
+      btn.disabled = true;
+      try {
+        const form = new FormData();
+        form.append('file', selectedFile);
+        const resp = await fetch('/analyze/image', { method: 'POST', body: form });
+        if (!resp.ok) throw new Error(`Помилка сервера: ${resp.status}`);
+        const data = await resp.json();
+        renderResults(data);
+      } catch (e) {
+        showError(e.message || 'Не вдалося проаналізувати фото.');
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    }
+  }
+
+  function renderResults(d) {
+    const confMap = { high: ['conf-high', '✓ Висока точність'], medium: ['conf-medium', '~ Середня точність'], low: ['conf-low', '≈ Приблизно'] };
+    const conf = confMap[d.confidence] || confMap['medium'];
+
+    const total = (d.protein || 0) + (d.fat || 0) + (d.carbs || 0) + (d.fiber || 0);
+    const pct = v => total > 0 ? Math.round(v / total * 100) : 0;
+
+    const ingredients = (d.ingredients || []).map(ing => `
+      <div class="ingredient-row">
+        <span class="ingredient-name">${ing.name}</span>
+        <span class="ingredient-stats">
+          <span>${ing.grams}г</span>
+          <span>${ing.calories} ккал</span>
+        </span>
+      </div>
+    `).join('');
+
+    const html = `
+      <div class="dish-title">${d.dish_name || 'Страва'}</div>
+      <div class="dish-meta">
+        <span class="portion-tag">🍴 ${d.portion_grams || '—'} г</span>
+        <span class="confidence-tag ${conf[0]}">${conf[1]}</span>
+      </div>
+
+      <div class="calories-hero">
+        <div>
+          <div class="calories-label">Калорійність</div>
+          <div class="calories-value">${d.calories}<span class="calories-unit"> ккал</span></div>
+        </div>
+        <div class="calories-icon">🔥</div>
+      </div>
+
+      <div class="macros-grid">
+        <div class="macro-card macro-protein">
+          <div class="macro-label">Білки</div>
+          <div class="macro-value">${d.protein}</div>
+          <div class="macro-unit">грам</div>
+        </div>
+        <div class="macro-card macro-fat">
+          <div class="macro-label">Жири</div>
+          <div class="macro-value">${d.fat}</div>
+          <div class="macro-unit">грам</div>
+        </div>
+        <div class="macro-card macro-carbs">
+          <div class="macro-label">Вуглеводи</div>
+          <div class="macro-value">${d.carbs}</div>
+          <div class="macro-unit">грам</div>
+        </div>
+      </div>
+
+      <div class="macro-bars">
+        <div class="bar-row">
+          <span class="bar-name">Білки</span>
+          <div class="bar-track"><div class="bar-fill protein" data-pct="${pct(d.protein)}"></div></div>
+          <span class="bar-val">${d.protein}г</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-name">Жири</span>
+          <div class="bar-track"><div class="bar-fill fat" data-pct="${pct(d.fat)}"></div></div>
+          <span class="bar-val">${d.fat}г</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-name">Вуглеводи</span>
+          <div class="bar-track"><div class="bar-fill carbs" data-pct="${pct(d.carbs)}"></div></div>
+          <span class="bar-val">${d.carbs}г</span>
+        </div>
+        ${d.fiber ? `
+        <div class="bar-row">
+          <span class="bar-name">Клітковина</span>
+          <div class="bar-track"><div class="bar-fill fiber" data-pct="${pct(d.fiber)}"></div></div>
+          <span class="bar-val">${d.fiber}г</span>
+        </div>` : ''}
+      </div>
+
+      ${ingredients ? `
+      <div class="ingredients-section">
+        <div class="section-title">Складові</div>
+        ${ingredients}
+      </div>` : ''}
+
+      ${d.notes ? `<div class="notes-box">💡 ${d.notes}</div>` : ''}
+    `;
+
+    const container = document.getElementById('results');
+    container.innerHTML = html;
+    container.classList.add('visible');
+
+    // Animate bars
+    requestAnimationFrame(() => {
+      container.querySelectorAll('.bar-fill').forEach(bar => {
+        bar.style.width = bar.dataset.pct + '%';
+      });
+    });
+
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Enter key submit
+  document.getElementById('food-text').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.ctrlKey) analyze();
+  });
+</script>
+</body>
+</html>
