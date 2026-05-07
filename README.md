@@ -16,19 +16,19 @@ pip install -r requirements.txt
 
 **macOS / Linux:**
 ```bash
-export GEMINI_API_KEY="your-key-here"
+export OPENAI_API_KEY="your-key-here"
 uvicorn main:app --reload
 ```
 
 **Windows (CMD):**
 ```cmd
-set GEMINI_API_KEY=your-key-here
+set OPENAI_API_KEY=your-key-here
 uvicorn main:app --reload
 ```
 
 **Windows (PowerShell):**
 ```powershell
-$env:GEMINI_API_KEY="your-key-here"
+$env:OPENAI_API_KEY="your-key-here"
 uvicorn main:app --reload
 ```
 
